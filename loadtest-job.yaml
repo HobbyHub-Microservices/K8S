@@ -1,0 +1,17 @@
+﻿apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-load-test
+spec:
+  parallelism: 4  
+  completions: 4  
+  template:
+    spec:
+      containers:
+        - name: k6
+          image: janinevansaaze/k6-loadtest:latest  
+          args:
+            - run
+            - /scripts/loadtest.js  
+      restartPolicy: Never
+  backoffLimit: 4
