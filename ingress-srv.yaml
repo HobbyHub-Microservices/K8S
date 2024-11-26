@@ -3,6 +3,7 @@ kind: Ingress
 metadata:
   name: ingress-srv
   annotations:
+#    nginx.ingress.kubernetes.io/rewrite-target: /  
     nginx.ingress.kubernetes.io/use-regex: 'true'
 spec:
   ingressClassName: nginx
@@ -31,3 +32,10 @@ spec:
                 name: grafana
                 port:
                   number: 3000
+#          - path: "/keycloak(/|$)(.*)"  # Match /keycloak and everything after it
+#            pathType: ImplementationSpecific
+#            backend:
+#              service:
+#                name: keycloak  # Name of the Keycloak service
+#                port:
+#                  number: 8080
