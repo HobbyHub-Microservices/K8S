@@ -1,0 +1,102 @@
+﻿apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  labels:
+    app: keycloak
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: keycloak
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  labels:
+    app: keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:26.0.6
+          args:
+            - "start-dev"
+          volumeMounts:
+            - mountPath: /opt/keycloak/providers
+              name: rabbitmq-plugin
+          env:
+            - name: KC_BOOTSTRAP_ADMIN_USERNAME
+              value: "admin"
+            - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+              value: "admin"
+            - name: KC_PROXY
+              value: "edge"
+              
+            #RabbitMQ
+            - name: KK_TO_RMQ_URL
+              value: rabbitmq-clusterip-srv
+            - name: KK_TO_RMQ_PORT
+              value: "5672"
+            - name: KK_TO_RMQ_USERNAME
+              value: "guest"
+            - name: KK_TO_RMQ_PASSWORD
+              value: "guest"
+            - name: KK_TO_RMQ_VHOST
+              value: "/" 
+            - name: KK_TO_RMQ_EXCHANGE
+              value: amq.topic
+              
+            #Database
+            - name: KC_DB
+              value: postgres
+            - name: POSTGRES_DB
+              value: "keycloak"
+            - name: KC_DB_URL
+              value: jdbc:postgresql://postgres-clusterip-srv:5432/keycloak
+            - name: KC_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /realms/master
+              port: 8080
+      volumes:
+        - name: rabbitmq-plugin
+          configMap:
+            name: keycloak-rabbitmq-plugin
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak-loadbalancer
+spec:
+  type: LoadBalancer
+  selector:
+    app: keycloak 
+  ports:
+    -  protocol: TCP
+       port: 8080
+       targetPort: 8080

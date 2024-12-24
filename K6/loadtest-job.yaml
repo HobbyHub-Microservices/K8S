@@ -4,7 +4,8 @@ metadata:
   name: k6-load-test
 spec:
   parallelism: 4  
-  completions: 4  
+  completions: 4
+  ttlSecondsAfterFinished: 0
   template:
     spec:
       containers:
